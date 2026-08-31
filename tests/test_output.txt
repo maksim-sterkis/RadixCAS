@@ -1,0 +1,100 @@
+=== RadixCAS (Algebraic Computer Algebra System) ===
+Please select an output mode:
+  [A] Auto (clean whole numbers/decimals, fallback to exact fractions)
+  [B] Decimal (always approximate values)
+  [C] Fraction (always exact fraction/radical format)
+Your selection (A/B/C, or 'exit'): Invalid choice. Please select A, B, C, or 'exit'.
+
+Please select an output mode:
+  [A] Auto (clean whole numbers/decimals, fallback to exact fractions)
+  [B] Decimal (always approximate values)
+  [C] Fraction (always exact fraction/radical format)
+Your selection (A/B/C, or 'exit'): >> Output Mode set to AUTO.
+
+Type 'exit' to close.
+
+Enter expression: Enter expression: Error: Unknown character '#'
+
+Enter expression: Result: 2
+
+Enter expression: Result: 1024
+
+Enter expression: Result: 120
+
+Enter expression: Result: 3root(2) (~4.242640687)
+
+Enter expression: Result: 19/(12) (~1.583333333)
+
+Enter expression: Enter expression: Error: Unknown character '#'
+
+Enter expression: Stored: x = 5
+
+Enter expression: Result: 32
+
+Enter expression: Result: y + 2
+
+Enter expression: Enter expression: Error: Unknown character '#'
+
+Enter expression: Result: i
+
+Enter expression: Result: 14 - 5i
+
+Enter expression: Enter expression: Error: Unknown character '#'
+
+Enter expression: Result: 1/(2) (~0.5)
+
+Enter expression: Result: 1/(2) (~0.5)
+
+Enter expression: Result: 1
+
+Enter expression: Result: (asin)/(2)
+
+Enter expression: Enter expression: Error: Unknown character '#'
+
+Enter expression: Result: (1/(t) * (t * ((2t * ln(t)) + t))) (~1)
+
+Enter expression: Result: t^3 + t^2
+
+Enter expression: Result: 1
+
+Enter expression: Result: 55
+
+Enter expression: Result: t - (t^3)/(6) + (t^5)/(120)
+
+Enter expression: Enter expression: Error: Unknown character '#'
+
+Enter expression: Result: System Solutions: a = 3, b = 2
+
+Enter expression: Result: v = 3 , v = 2
+
+Enter expression: Enter expression: Error: Unknown character '#'
+
+Enter expression: Result: -2
+
+Enter expression: Result: [[-2, 1], [3/(2), -1/(2)]] (~0)
+
+Enter expression: Enter expression: Error: Unknown character '#'
+
+Enter expression: 
+                              90, pi/2
+                               (0, 1)
+                              _.-|-._
+          135, 3pi/4      _.-'   |   '-._      45, pi/4
+       (-V2/2, V2/2)    .'       |       '.    (V2/2, V2/2)
+                      .'         |         '.
+                    .'           |           '.
+                  .'             |             '.
+ 180, pi        .'               |               '.        0, 2pi
+ (-1, 0) -------+----------------+----------------+------- (1, 0)
+                '.               |               .'
+                  '.             |             .'
+                    '.           |           .'
+                      '.         |         .'
+          225, 5pi/4    '-._     |     _.-'    315, 7pi/4
+       (-V2/2, -V2/2)       '-._ | _.-'        (V2/2, -V2/2)
+                                '-'
+                              270, 3pi/2
+                               (0, -1)
+      
+
+Enter expression: Goodbye from RadixCAS!

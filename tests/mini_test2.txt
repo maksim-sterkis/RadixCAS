@@ -1,0 +1,12 @@
+a
+x = 5
+x^2 + 2x - 3
+(y^2 - 4) / (y - 2)
+root(-1)
+(2 + 3i) * (1 - 4i)
+sin(pi/6)
+cos(pi/3)
+tan(pi/4)
+asin(0.5)
+derivative(t^2 * ln(t), t)
+exit

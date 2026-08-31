@@ -1,0 +1,18 @@
+=== RadixCAS (Algebraic Computer Algebra System) ===
+Please select an output mode:
+  [A] Auto (clean whole numbers/decimals, fallback to exact fractions)
+  [B] Decimal (always approximate values)
+  [C] Fraction (always exact fraction/radical format)
+Your selection (A/B/C, or 'exit'): >> Output Mode set to AUTO.
+
+Type 'exit' to close.
+
+Enter expression: Result: 8.539734223
+
+Enter expression: Result: epi (~8.539734223)
+
+Enter expression: Result: pi (~3.141592654)
+
+Enter expression: Result: 3
+
+Enter expression: Goodbye from RadixCAS!

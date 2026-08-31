@@ -1,0 +1,3 @@
+a
+derivative(t^2 * ln(t), t)
+exit

@@ -1,0 +1,6 @@
+a
+approx(pi * e)
+pi*e
+pi
+ln(e^5) - ln(e^2)
+exit

@@ -1,0 +1,41 @@
+# Output Mode
+a
+
+# Basic Arithmetic and Exact Math
+1 + 1
+2^10
+5!
+root(18)
+3/4 + 5/6
+
+# Variables and Algebra
+x = 5
+x^2 + 2x - 3
+(y^2 - 4) / (y - 2)
+
+# Complex Numbers
+root(-1)
+(2 + 3i) * (1 - 4i)
+
+# Trigonometry
+sin(pi/6)
+cos(pi/3)
+tan(pi/4)
+asin(0.5)
+
+# Calculus
+derivative(t^2 * ln(t), t)
+integral(3t^2 + 2t, t)
+limit(sin(t)/t, t, 0)
+sum(t^2, t, 1, 5)
+taylor(sin(t), t, 0, 5)
+
+# Equation Solving
+solve([a + b = 5, a - b = 1], [a, b])
+solve(v^2 - 5v + 6 = 0, v)
+
+# Matrix Operations
+det([[1, 2], [3, 4]])
+invert([[1, 2], [3, 4]])
+
+exit
