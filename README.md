@@ -19,7 +19,7 @@ When you launch the calculator, you can select one of three output modes:
 - Implicit multiplication and binomial expansion: `(x + y)^2 - 2xy` -> `x^2 + y^2`
 - Imaginary Numbers (`i`): `(2 + 3i) * (2 - 3i)` -> `13`
 - Roots and Radicals: `root(18) + root(8)` -> `5root(2)`
-- Factorials (`!`): `5!` -> `120`
+- Factorials (`!`): `5!` -> `120` (Supports non-integer Gamma function evaluation, e.g. `(1/2)!` -> `root(pi)/2`)
 - Polynomial Division: `(x^2 - 4) / (x - 1)` -> `x + 1 - 3/(x - 1)`
 
 ### Built-In Constants

@@ -50,6 +50,17 @@ void tokenize(std::string_view input, ParserState &state) {
             }
           }
         }
+        
+        if (!matched && std::isdigit(ident[idx])) {
+          size_t len = 0;
+          while (idx + len < ident.length() && std::isdigit(ident[idx + len])) {
+            len++;
+          }
+          raw_tokens.push_back({TokenType::NUMBER, std::string(ident.substr(idx, len))});
+          idx += len;
+          matched = true;
+        }
+
         if (!matched) {
           raw_tokens.push_back(
               {TokenType::IDENTIFIER, std::string(1, ident[idx])});

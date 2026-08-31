@@ -7,6 +7,7 @@
 #include "Parser.hpp"
 #include "Polynomial.hpp"
 #include "Tokenizer.hpp"
+#include "Config.hpp"
 #include <cmath>
 #include <complex>
 #include <numbers>
@@ -292,25 +293,81 @@ ExactValue evaluate(ParserState &state, int node_idx) {
     if (node.op == '!') {
       ExactValue res = evaluate(state, node.left_idx);
       if (res.terms.size() == 0) return make_exact(HybridInt(1), HybridInt(1), HybridInt(1), 2, 1.0);
-      if (res.terms.size() != 1 || res.terms[0].b != HybridInt(1) || res.terms[0].c != HybridInt(1) || res.terms[0].root_degree != 2 || res.terms[0].is_imaginary || res.terms[0].vars.size() > 0) {
-         state.error = ParseError::UNSUPPORTED_OPERATION;
-         state.error_extra = "factorial only supports non-negative integers";
-         return {};
+      
+      bool is_simple = (res.terms.size() == 1 && res.terms[0].b == HybridInt(1) && res.terms[0].root_degree == 2 && !res.terms[0].is_imaginary && res.terms[0].vars.empty());
+      
+      if (is_simple && res.terms[0].c == HybridInt(1)) {
+        if (res.terms[0].a < HybridInt(0)) {
+           state.error = ParseError::UNSUPPORTED_OPERATION;
+           state.error_extra = "factorial is undefined for negative integers";
+           return {};
+        }
+        HybridInt n = res.terms[0].a;
+        HybridInt fact = HybridInt(1);
+        HybridInt zero = HybridInt(0);
+        HybridInt one = HybridInt(1);
+        while (zero < n) {
+          fact = fact * n;
+          n = n - one;
+        }
+        return make_exact(fact, HybridInt(1), HybridInt(1), 2, fact.to_double());
+      } 
+      else if (is_simple && res.terms[0].c == HybridInt(2)) {
+        HybridInt num = res.terms[0].a;
+        HybridInt fact_num = HybridInt(1);
+        HybridInt fact_den = HybridInt(1);
+        if (num > HybridInt(0)) {
+            HybridInt current = num;
+            HybridInt zero = HybridInt(0);
+            HybridInt two = HybridInt(2);
+            while (zero < current) {
+                fact_num = fact_num * current;
+                fact_den = fact_den * two;
+                current = current - two;
+            }
+            double val = fact_num.to_double() / fact_den.to_double() * std::sqrt(std::numbers::pi);
+            ExactValue ev = make_exact(fact_num, HybridInt(1), fact_den, 2, val);
+            std::string root_pi = get_root_symbol(2) + (USE_UNICODE ? "" : "(") + get_pi_symbol() + (USE_UNICODE ? "" : ")");
+            ev.terms[0].vars.push_back({root_pi, 1});
+            return ev;
+        } else {
+            HybridInt current = num;
+            HybridInt minus_one = HybridInt(-1);
+            HybridInt two = HybridInt(2);
+            if (num == minus_one) {
+                ExactValue ev = make_exact(HybridInt(1), HybridInt(1), HybridInt(1), 2, std::sqrt(std::numbers::pi));
+                std::string root_pi = get_root_symbol(2) + (USE_UNICODE ? "" : "(") + get_pi_symbol() + (USE_UNICODE ? "" : ")");
+                ev.terms[0].vars.push_back({root_pi, 1});
+                return ev;
+            }
+            HybridInt k = HybridInt(-1);
+            while (current < k) {
+                fact_num = fact_num * two;
+                fact_den = fact_den * k;
+                k = k - two;
+            }
+            if (fact_den < HybridInt(0)) {
+                fact_num = -fact_num;
+                fact_den = -fact_den;
+            }
+            double val = fact_num.to_double() / fact_den.to_double() * std::sqrt(std::numbers::pi);
+            ExactValue ev = make_exact(fact_num, HybridInt(1), fact_den, 2, val);
+            std::string root_pi = get_root_symbol(2) + (USE_UNICODE ? "" : "(") + get_pi_symbol() + (USE_UNICODE ? "" : ")");
+            ev.terms[0].vars.push_back({root_pi, 1});
+            return ev;
+        }
+      } 
+      else {
+        // Decimal fallback
+        double val = to_double(res);
+        if (val < 0.0 && std::floor(val) == val) {
+            state.error = ParseError::UNSUPPORTED_OPERATION;
+            state.error_extra = "factorial is undefined for negative integers";
+            return {};
+        }
+        double approx = std::tgamma(val + 1.0);
+        return double_to_exact(approx);
       }
-      if (res.terms[0].a < HybridInt(0)) {
-         state.error = ParseError::UNSUPPORTED_OPERATION;
-         state.error_extra = "factorial only supports non-negative integers";
-         return {};
-      }
-      HybridInt n = res.terms[0].a;
-      HybridInt fact = HybridInt(1);
-      HybridInt zero = HybridInt(0);
-      HybridInt one = HybridInt(1);
-      while (zero < n) {
-        fact = fact * n;
-        n = n - one;
-      }
-      return make_exact(fact, HybridInt(1), HybridInt(1), 2, fact.to_double());
     }
   }
   if (node.type == ASTNodeType::FUNCTION) {
