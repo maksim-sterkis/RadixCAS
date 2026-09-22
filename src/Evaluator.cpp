@@ -1791,11 +1791,13 @@ ExactValue evaluate(ParserState &state, int node_idx) {
       if (node.left_idx == -1) {
         state.error = ParseError::UNSUPPORTED_OPERATION;
         state.error_extra =
-            "round requires 2 arguments: round(decimals, value)";
+            "round requires 2 arguments: round(expression, decimal_places)";
         return {};
       }
-      ExactValue decimals_ev = evaluate(state, node.left_idx);
-      ExactValue val_ev = evaluate(state, node.right_idx);
+      // left_idx  = expression to round (first argument)
+      // right_idx = number of decimal places (second argument)
+      ExactValue val_ev     = evaluate(state, node.left_idx);
+      ExactValue decimals_ev = evaluate(state, node.right_idx);
 
       double decimals_dbl = std::round(to_double(decimals_ev));
       if (decimals_dbl < 0 || decimals_dbl > 15) {
