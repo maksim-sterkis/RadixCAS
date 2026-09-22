@@ -144,3 +144,97 @@ ExactValue Matrix::invert(ParserState &state) {
   ev.symbolic_repr = res;
   return ev;
 }
+
+// ── New: convert any M×N matrix back to an ExactValue ──────────────────────
+ExactValue Matrix::to_exact_value() const {
+  std::string res = "[";
+  for (int r = 0; r < rows; ++r) {
+    res += "[";
+    for (int c = 0; c < cols; ++c) {
+      res += to_exact_string(data[r][c]);
+      if (c < cols - 1) res += ", ";
+    }
+    res += "]";
+    if (r < rows - 1) res += ", ";
+  }
+  res += "]";
+  ExactValue ev;
+  ev.symbolic_repr = res;
+  return ev;
+}
+
+// ── Element-wise addition (M×N + M×N → M×N) ────────────────────────────────
+Matrix Matrix::mat_add(const Matrix &other, ParserState &state) const {
+  if (rows != other.rows || cols != other.cols) {
+    state.error = ParseError::UNSUPPORTED_OPERATION;
+    state.error_extra = "matrix dimension mismatch for addition: (" +
+                        std::to_string(rows) + "x" + std::to_string(cols) +
+                        ") vs (" + std::to_string(other.rows) + "x" +
+                        std::to_string(other.cols) + ")";
+    return Matrix(0, 0);
+  }
+  Matrix result(rows, cols);
+  for (int r = 0; r < rows; ++r)
+    for (int c = 0; c < cols; ++c) {
+      result.set(r, c, add(data[r][c], other.data[r][c], state));
+      if (state.error != ParseError::NONE) return Matrix(0, 0);
+    }
+  return result;
+}
+
+// ── Element-wise subtraction (M×N − M×N → M×N) ─────────────────────────────
+Matrix Matrix::mat_subtract(const Matrix &other, ParserState &state) const {
+  if (rows != other.rows || cols != other.cols) {
+    state.error = ParseError::UNSUPPORTED_OPERATION;
+    state.error_extra = "matrix dimension mismatch for subtraction: (" +
+                        std::to_string(rows) + "x" + std::to_string(cols) +
+                        ") vs (" + std::to_string(other.rows) + "x" +
+                        std::to_string(other.cols) + ")";
+    return Matrix(0, 0);
+  }
+  Matrix result(rows, cols);
+  for (int r = 0; r < rows; ++r)
+    for (int c = 0; c < cols; ++c) {
+      result.set(r, c, subtract(data[r][c], other.data[r][c], state));
+      if (state.error != ParseError::NONE) return Matrix(0, 0);
+    }
+  return result;
+}
+
+// ── Matrix multiplication (M×K * K×N → M×N) ────────────────────────────────
+Matrix Matrix::mat_multiply(const Matrix &other, ParserState &state) const {
+  if (cols != other.rows) {
+    state.error = ParseError::UNSUPPORTED_OPERATION;
+    state.error_extra = "matrix dimension mismatch for multiplication: (" +
+                        std::to_string(rows) + "x" + std::to_string(cols) +
+                        ") * (" + std::to_string(other.rows) + "x" +
+                        std::to_string(other.cols) + ")";
+    return Matrix(0, 0);
+  }
+  Matrix result(rows, other.cols);
+  ExactValue zero = make_exact(0, 1, 1, 2, 0.0);
+  for (int r = 0; r < rows; ++r) {
+    for (int c = 0; c < other.cols; ++c) {
+      ExactValue sum = zero;
+      for (int k = 0; k < cols; ++k) {
+        ExactValue prod = multiply(data[r][k], other.data[k][c], state);
+        if (state.error != ParseError::NONE) return Matrix(0, 0);
+        sum = add(sum, prod, state);
+        if (state.error != ParseError::NONE) return Matrix(0, 0);
+      }
+      result.set(r, c, sum);
+    }
+  }
+  return result;
+}
+
+// ── Scalar multiplication (scalar * M×N → M×N) ─────────────────────────────
+Matrix Matrix::mat_scalar(const ExactValue &scalar, ParserState &state) const {
+  Matrix result(rows, cols);
+  for (int r = 0; r < rows; ++r)
+    for (int c = 0; c < cols; ++c) {
+      result.set(r, c, multiply(scalar, data[r][c], state));
+      if (state.error != ParseError::NONE) return Matrix(0, 0);
+    }
+  return result;
+}

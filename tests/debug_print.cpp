@@ -2,7 +2,6 @@
 #include "../src/Parser.hpp"
 #include "../src/Evaluator.hpp"
 #include "../src/AST.hpp"
-#include "../src/Config.hpp"
 #include <iostream>
 
 int main() {

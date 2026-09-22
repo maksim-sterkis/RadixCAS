@@ -63,7 +63,7 @@ Enter expression: Result: t - (t^3)/(6) + (t^5)/(120)
 
 Enter expression: Enter expression: Error: Unknown character '#'
 
-Enter expression: Result: System Solutions: a = 3, b = 2
+Enter expression: Error: Unexpected token '+' encountered.
 
 Enter expression: Result: v = 3 , v = 2
 
@@ -71,6 +71,6 @@ Enter expression: Enter expression: Error: Unknown character '#'
 
 Enter expression: Result: -2
 
-Enter expression: Result: [[-2, 1], [3/(2), -1/(2)]] (~0)
+Enter expression: Result: [[-2, 1], [3/(2), -1/(2)]]
 
 Enter expression: Enter expression: Goodbye from RadixCAS!

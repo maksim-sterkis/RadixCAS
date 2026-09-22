@@ -269,7 +269,65 @@ int clone_and_substitute(ParserState &state, int node_idx,
   return state.ast_pool.size() - 1;
 }
 
+// ── Matrix helpers ────────────────────────────────────────────────────────────
+
+// Returns true if node_idx points to a 2-D matrix literal
+// (an ARRAY whose first element is also an ARRAY).
+static bool is_matrix_array(const ParserState &state, int node_idx) {
+  if (node_idx < 0 || node_idx >= (int)state.ast_pool.size()) return false;
+  const ASTNode &node = state.ast_pool[node_idx];
+  if (node.type != ASTNodeType::ARRAY || node.args.empty()) return false;
+  int first = node.args[0];
+  if (first < 0 || first >= (int)state.ast_pool.size()) return false;
+  return state.ast_pool[first].type == ASTNodeType::ARRAY;
+}
+
+// Build a Matrix by evaluating a 2-D ARRAY node.
+static Matrix extract_matrix_from_node(ParserState &state, int node_idx) {
+  const ASTNode &outer = state.ast_pool[node_idx];
+  int rows = (int)outer.args.size();
+  // Peek at the first row to determine column count
+  const ASTNode &first_row = state.ast_pool[outer.args[0]];
+  int cols = (int)first_row.args.size();
+  Matrix mat(rows, cols);
+  for (int r = 0; r < rows; ++r) {
+    const ASTNode &row_node = state.ast_pool[outer.args[r]];
+    if (row_node.type != ASTNodeType::ARRAY || (int)row_node.args.size() != cols) {
+      state.error = ParseError::UNSUPPORTED_OPERATION;
+      state.error_extra = "inconsistent matrix row length";
+      return Matrix(0, 0);
+    }
+    for (int c = 0; c < cols; ++c) {
+      ExactValue val = evaluate(state, row_node.args[c]);
+      if (state.error != ParseError::NONE) return Matrix(0, 0);
+      mat.set(r, c, val);
+    }
+  }
+  return mat;
+}
+
+// Re-parse a matrix symbolic_repr string (e.g. "[[1, 2], [3, 4]]") into a Matrix.
+// Used when an operand comes from a stored variable or from invert().
+static Matrix extract_matrix_from_repr(const std::string &repr, ParserState &outer_state) {
+  ParserState sub_state;
+  tokenize(repr, sub_state);
+  int root = parse_expression(sub_state, 0);
+  if (sub_state.error != ParseError::NONE || !is_matrix_array(sub_state, root)) {
+    outer_state.error = ParseError::UNSUPPORTED_OPERATION;
+    outer_state.error_extra = "could not interpret matrix value";
+    return Matrix(0, 0);
+  }
+  return extract_matrix_from_node(sub_state, root);
+}
+
+// Returns true if an ExactValue holds a matrix (symbolic_repr starts with "[[").
+static bool is_matrix_value(const ExactValue &ev) {
+  return ev.symbolic_repr.size() >= 2 &&
+         ev.symbolic_repr[0] == '[' && ev.symbolic_repr[1] == '[';
+}
+
 ExactValue evaluate(ParserState &state, int node_idx) {
+
   if (state.error != ParseError::NONE)
     return {};
   if (node_idx < 0 || node_idx >= static_cast<int>(state.ast_pool.size()))
@@ -2017,10 +2075,116 @@ ExactValue evaluate(ParserState &state, int node_idx) {
 
   if (node.type == ASTNodeType::BINARY) {
 
+    // ── Matrix arithmetic interception ────────────────────────────────────────
+    // Check whether either child is a matrix BEFORE evaluating them as scalars.
+    bool left_is_mat_node  = is_matrix_array(state, node.left_idx);
+    bool right_is_mat_node = is_matrix_array(state, node.right_idx);
+
+    if (left_is_mat_node || right_is_mat_node) {
+      if (node.op == '+' || node.op == '-' || node.op == '*') {
+
+        // Build the left operand
+        bool left_is_mat  = left_is_mat_node;
+        bool right_is_mat = right_is_mat_node;
+
+        // Evaluate the scalar side (if any) first so we can detect matrices
+        // that live in variables (symbolic_repr = "[[...]]").
+        ExactValue left_scalar, right_scalar;
+        Matrix     left_mat(0, 0), right_mat(0, 0);
+
+        if (left_is_mat) {
+          left_mat = extract_matrix_from_node(state, node.left_idx);
+        } else {
+          left_scalar = evaluate(state, node.left_idx);
+          if (state.error != ParseError::NONE) return {};
+          if (is_matrix_value(left_scalar)) {
+            left_mat  = extract_matrix_from_repr(left_scalar.symbolic_repr, state);
+            left_is_mat = true;
+          }
+        }
+        if (state.error != ParseError::NONE) return {};
+
+        if (right_is_mat) {
+          right_mat = extract_matrix_from_node(state, node.right_idx);
+        } else {
+          right_scalar = evaluate(state, node.right_idx);
+          if (state.error != ParseError::NONE) return {};
+          if (is_matrix_value(right_scalar)) {
+            right_mat  = extract_matrix_from_repr(right_scalar.symbolic_repr, state);
+            right_is_mat = true;
+          }
+        }
+        if (state.error != ParseError::NONE) return {};
+
+        if (node.op == '+') {
+          if (!left_is_mat || !right_is_mat) {
+            state.error = ParseError::UNSUPPORTED_OPERATION;
+            state.error_extra = "cannot add a scalar and a matrix";
+            return {};
+          }
+          return left_mat.mat_add(right_mat, state).to_exact_value();
+        }
+        if (node.op == '-') {
+          if (!left_is_mat || !right_is_mat) {
+            state.error = ParseError::UNSUPPORTED_OPERATION;
+            state.error_extra = "cannot subtract a scalar and a matrix";
+            return {};
+          }
+          return left_mat.mat_subtract(right_mat, state).to_exact_value();
+        }
+        if (node.op == '*') {
+          if (left_is_mat && right_is_mat)
+            return left_mat.mat_multiply(right_mat, state).to_exact_value();
+          if (left_is_mat && !right_is_mat)
+            return left_mat.mat_scalar(right_scalar, state).to_exact_value();
+          // !left_is_mat && right_is_mat
+          return right_mat.mat_scalar(left_scalar, state).to_exact_value();
+        }
+      } else {
+        state.error = ParseError::UNSUPPORTED_OPERATION;
+        state.error_extra = "operator not supported for matrices (use +, -, *)";
+        return {};
+      }
+    }
+
+    // ── Standard scalar binary evaluation ─────────────────────────────────────
     ExactValue left_val = evaluate(state, node.left_idx);
     ExactValue right_val = evaluate(state, node.right_idx);
     if (state.error != ParseError::NONE)
       return {};
+
+    // Also intercept matrices stored in variables (from invert, or prior results)
+    bool lv_mat = is_matrix_value(left_val);
+    bool rv_mat = is_matrix_value(right_val);
+    if ((lv_mat || rv_mat) && (node.op == '+' || node.op == '-' || node.op == '*')) {
+      Matrix lm(0, 0), rm(0, 0);
+      if (lv_mat) lm = extract_matrix_from_repr(left_val.symbolic_repr, state);
+      if (state.error != ParseError::NONE) return {};
+      if (rv_mat) rm = extract_matrix_from_repr(right_val.symbolic_repr, state);
+      if (state.error != ParseError::NONE) return {};
+
+      if (node.op == '+') {
+        if (!lv_mat || !rv_mat) {
+          state.error = ParseError::UNSUPPORTED_OPERATION;
+          state.error_extra = "cannot add a scalar and a matrix";
+          return {};
+        }
+        return lm.mat_add(rm, state).to_exact_value();
+      }
+      if (node.op == '-') {
+        if (!lv_mat || !rv_mat) {
+          state.error = ParseError::UNSUPPORTED_OPERATION;
+          state.error_extra = "cannot subtract a scalar and a matrix";
+          return {};
+        }
+        return lm.mat_subtract(rm, state).to_exact_value();
+      }
+      if (node.op == '*') {
+        if (lv_mat && rv_mat) return lm.mat_multiply(rm, state).to_exact_value();
+        if (lv_mat)           return lm.mat_scalar(right_val, state).to_exact_value();
+        /* rv_mat */          return rm.mat_scalar(left_val,  state).to_exact_value();
+      }
+    }
 
     switch (node.op) {
     case '=':
@@ -2054,3 +2218,4 @@ ExactValue evaluate(ParserState &state, int node_idx) {
   }
   return {};
 }
+

@@ -614,6 +614,73 @@ RationalValue get_rational_form(ExactValue ev, ParserState &state) {
   return rv;
 }
 
+// ── Pretty-print a matrix symbolic_repr ─────────────────────────────────────
+// Converts "[[a, b], [c, d]]" into column-aligned, bracket-aligned output:
+//   [  1  2 ]
+//   [  3  4 ]
+static std::string format_matrix_repr(const std::string &repr) {
+  // ── Step 1: parse into a vector-of-rows of element strings ──────────────
+  std::vector<std::vector<std::string>> mat;
+  size_t i = 1; // skip outer '['
+  while (i < repr.size()) {
+    if (repr[i] == '[') {
+      // find matching ']'
+      size_t j = i + 1;
+      int depth = 1;
+      while (j < repr.size() && depth > 0) {
+        if (repr[j] == '[') ++depth;
+        else if (repr[j] == ']') --depth;
+        ++j;
+      }
+      std::string row_content = repr.substr(i + 1, j - i - 2);
+      // split row by ", " to get individual elements
+      std::vector<std::string> row;
+      size_t start = 0;
+      while (start <= row_content.size()) {
+        size_t comma = row_content.find(", ", start);
+        std::string elem;
+        if (comma == std::string::npos) {
+          elem = row_content.substr(start);
+          start = row_content.size() + 1;
+        } else {
+          elem = row_content.substr(start, comma - start);
+          start = comma + 2;
+        }
+        if (!elem.empty()) row.push_back(elem);
+      }
+      if (!row.empty()) mat.push_back(row);
+      i = j;
+    } else {
+      ++i;
+    }
+  }
+
+  if (mat.empty()) return repr;
+  int cols = (int)mat[0].size();
+
+  // ── Step 2: compute max element width per column ─────────────────────────
+  std::vector<int> col_w(cols, 0);
+  for (const auto &row : mat)
+    for (int c = 0; c < (int)row.size() && c < cols; ++c)
+      col_w[c] = std::max(col_w[c], (int)row[c].size());
+
+  // ── Step 3: render each row, right-aligning elements in their columns ────
+  std::string result;
+  for (size_t r = 0; r < mat.size(); ++r) {
+    if (r > 0) result += "\n";
+    result += "[ ";
+    for (int c = 0; c < cols; ++c) {
+      const std::string &elem = (c < (int)mat[r].size()) ? mat[r][c] : "";
+      int pad = col_w[c] - (int)elem.size();
+      for (int p = 0; p < pad; ++p) result += " ";
+      result += elem;
+      if (c < cols - 1) result += "  ";
+    }
+    result += " ]";
+  }
+  return result;
+}
+
 std::string format_output(const ExactValue &ev, OutputMode mode) {
   ParserState dummy_state;
   
@@ -642,6 +709,11 @@ std::string format_output(const ExactValue &ev, OutputMode mode) {
   }
 
   if (!ev.symbolic_repr.empty() || ev.is_approx) {
+    // Pretty-print matrix results in all modes
+    if (ev.symbolic_repr.size() >= 2 &&
+        ev.symbolic_repr[0] == '[' && ev.symbolic_repr[1] == '[')
+      return format_matrix_repr(ev.symbolic_repr);
+
     if (mode == OutputMode::AUTO && !ev.is_approx) {
       if (ev.symbolic_repr.find("=") != std::string::npos ||
           ev.symbolic_repr.find("<") != std::string::npos ||

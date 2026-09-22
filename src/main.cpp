@@ -10,7 +10,82 @@
 
 #include <algorithm>
 #include <iostream>
+#include <sstream>
 #include <string>
+
+// ── Matrix shorthand pre-processor ───────────────────────────────────────────
+// Converts natural syntax into the canonical [[r1c1, r1c2], [r2c1, r2c2]] form
+// before tokenisation.
+//
+// Rules (only applied to simple bracket groups with NO nested '['):
+//   - Spaces separate columns within a row
+//   - Commas separate rows
+//
+// Examples:
+//   [1 2 3]       ->  [[1, 2, 3]]          (1×3 row vector)
+//   [1 2, 3 4]    ->  [[1, 2], [3, 4]]     (2×2 matrix)
+//   [1 2 3, 4 5 6] -> [[1, 2, 3], [4, 5, 6]] (2×3)
+//   [[1,2],[3,4]] ->  unchanged (already canonical)
+static std::string preprocess_matrix_syntax(const std::string &input) {
+  std::string result;
+  result.reserve(input.size() * 2);
+  size_t i = 0;
+  while (i < input.size()) {
+    if (input[i] == '[') {
+      // Peek ahead: if the very next non-space char is '[', it's already
+      // canonical — copy the entire outer bracket verbatim.
+      size_t j = i + 1;
+      while (j < input.size() && input[j] == ' ') ++j;
+      if (j < input.size() && input[j] == '[') {
+        // Already canonical: copy until matching ']'
+        int depth = 0;
+        while (i < input.size()) {
+          if (input[i] == '[') ++depth;
+          else if (input[i] == ']') --depth;
+          result += input[i++];
+          if (depth == 0) break;
+        }
+        continue;
+      }
+      // Simple bracket group — collect everything up to the matching ']'
+      ++i;
+      std::string inner;
+      int depth = 1;
+      while (i < input.size() && depth > 0) {
+        if (input[i] == '[') ++depth;
+        else if (input[i] == ']') { --depth; if (depth == 0) { ++i; break; } }
+        inner += input[i++];
+      }
+      // Split inner by commas to get rows
+      std::vector<std::string> rows;
+      std::string cur_row;
+      for (char c : inner) {
+        if (c == ',') { rows.push_back(cur_row); cur_row.clear(); }
+        else cur_row += c;
+      }
+      rows.push_back(cur_row);
+      // For each row, split by whitespace to get individual tokens (columns)
+      result += '[';
+      for (size_t r = 0; r < rows.size(); ++r) {
+        std::istringstream iss(rows[r]);
+        std::vector<std::string> cols;
+        std::string tok;
+        while (iss >> tok) cols.push_back(tok);
+        result += '[';
+        for (size_t c = 0; c < cols.size(); ++c) {
+          result += cols[c];
+          if (c + 1 < cols.size()) result += ", ";
+        }
+        result += ']';
+        if (r + 1 < rows.size()) result += ", ";
+      }
+      result += ']';
+      continue;
+    }
+    result += input[i++];
+  }
+  return result;
+}
 
 int main() {
   std::cout << "=== RadixCAS (Algebraic Computer Algebra System) ==="
@@ -84,7 +159,9 @@ int main() {
     state.error = ParseError::NONE;
     state.error_extra = "";
 
-    tokenize(expr, state);
+    // Pre-process natural matrix shorthand: [1 2, 3 4] -> [[1, 2], [3, 4]]
+    std::string processed_expr = preprocess_matrix_syntax(expr);
+    tokenize(processed_expr, state);
 
     if (state.error == ParseError::NONE) {
       // Variable Assignment checking (e.g. x = 5)
