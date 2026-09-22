@@ -64,21 +64,66 @@ Solves systems of equations natively.
   - Example: `taylor(sin(x), x, 0, 5)` -> `x - (x^3)/6 + (x^5)/120`
 
 ### 6. Linear Algebra
-- **`det(matrix)`**: Computes the determinant of a square matrix.
-  - Example: `det([[1, 2], [3, 4]])` -> `-2`
-- **`invert(matrix)`**: Computes the inverse of an invertible square matrix using adjugate methods.
-  - Example: `invert([[1, 2], [3, 4]])` -> `[[-2, 1], [3/2, -1/2]]`
-- **Matrix Addition (`+`)**: Element-wise addition for any matching M×N matrices.
-  - Example: `[[1, 2], [3, 4]] + [[5, 6], [7, 8]]` -> `[[6, 8], [10, 12]]`
-  - Supports arbitrary dimensions: `[[1,2,3],[4,5,6]] + [[7,8,9],[10,11,12]]` -> `[[8, 10, 12], [14, 16, 18]]`
-- **Matrix Subtraction (`-`)**: Element-wise subtraction for any matching M×N matrices.
-  - Example: `[[5, 6], [7, 8]] - [[1, 2], [3, 4]]` -> `[[4, 4], [4, 4]]`
-- **Matrix Multiplication (`*`)**: Standard matrix multiplication for compatible dimensions (M×K * K×N → M×N).
-  - Square: `[[1, 2], [3, 4]] * [[2, 0], [1, 2]]` -> `[[4, 4], [10, 8]]`
-  - Rectangular: `[[1, 2, 3], [4, 5, 6]] * [[7, 8], [9, 10], [11, 12]]` -> `[[58, 64], [139, 154]]`
-- **Scalar Multiplication (`*`)**: Multiply any M×N matrix by a scalar.
-  - Example: `3 * [[1, 2], [3, 4]]` -> `[[3, 6], [9, 12]]`
-  - Also works as: `[[1, 2], [3, 4]] * 3` -> `[[3, 6], [9, 12]]`
+
+#### Matrix Syntax
+Matrices are entered using brackets `[ ]`. **Spaces separate columns**, **commas separate rows**:
+
+```
+[1 2 3]              → 1×3 row vector
+[1 2, 3 4]           → 2×2 matrix
+[1 2 3, 4 5 6]       → 2×3 matrix
+[1 2, 3 4, 5 6]      → 3×2 matrix
+[1 0 0 0, 0 1 0 0, 0 0 1 0, 0 0 0 1]   → 4×4 identity matrix
+```
+
+Results are displayed in clean, column-aligned format:
+```
+[ 1  2  3 ]
+[ 4  5  6 ]
+[ 7  8  9 ]
+```
+
+#### Matrix Operations
+- **Addition (`+`)**: Element-wise addition — dimensions must match.
+  - `[1 2, 3 4] + [5 6, 7 8]` →
+    ```
+    [ 6   8 ]
+    [ 10  12 ]
+    ```
+- **Subtraction (`-`)**: Element-wise subtraction — dimensions must match.
+  - `[5 6, 7 8] - [1 2, 3 4]` →
+    ```
+    [ 4  4 ]
+    [ 4  4 ]
+    ```
+- **Multiplication (`*`)**: Standard matrix multiplication — inner dimensions must match (M×K · K×N → M×N).
+  - Square: `[1 2, 3 4] * [2 0, 1 2]` →
+    ```
+    [  4  4 ]
+    [ 10  8 ]
+    ```
+  - Rectangular: `[1 2 3, 4 5 6] * [7 8, 9 10, 11 12]` →
+    ```
+    [  58   64 ]
+    [ 139  154 ]
+    ```
+- **Scalar Multiplication (`*`)**: Multiply any M×N matrix by a scalar on either side.
+  - `3 * [1 2, 3 4]` →
+    ```
+    [ 3   6 ]
+    [ 9  12 ]
+    ```
+
+#### Matrix Functions
+- **`det(matrix)`**: Determinant of any square matrix.
+  - `det([1 2, 3 4])` → `-2`
+  - `det([1 2 3, 4 5 6, 7 8 10])` → `-3`
+- **`invert(matrix)`**: Inverse of an invertible square matrix.
+  - `invert([1 2, 3 4])` →
+    ```
+    [    -2       1 ]
+    [ 3/(2)  -1/(2) ]
+    ```
 
 ### 7. Mathematical Modifiers
 - **`approx(expression)`**: Forces the internal expression to evaluate as a decimal floating point, ignoring the global output mode setting. Example: `approx(pi * e)`.
